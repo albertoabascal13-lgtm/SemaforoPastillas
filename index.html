@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#23574a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Semáforo">
+<meta name="description" content="Diario de cómo te encuentras por mañana, tarde y noche, con calendario y control de pastillas.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Mi Semáforo Diario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: app de una columna para móvil, cabecera fija con fecha, contenido por pestañas y barra inferior de navegación */
+:root{
+  --bg:#f3f4f1; --surface:#ffffff; --ink:#1d2421; --muted:#5f6b66; --line:#dde2de;
+  --accent:#23574a; --accent-ink:#ffffff; --accent-soft:#dfece7;
+  --rojo:#d93a2b; --amarillo:#e9a913; --verde:#2f9a4c; --off:#cfd5d1; --housing:#2a302d;
+  --fiesta:#b5442e; --fiesta-soft:#f7e4df;
+  --f-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121614; --surface:#1b211e; --ink:#e7ece9; --muted:#9aa7a1; --line:#2c3531;
+  --accent:#7cc2ad; --accent-ink:#0f1a16; --accent-soft:#1f3a32;
+  --rojo:#f0594a; --amarillo:#f5bd34; --verde:#4cc06b; --off:#3a4440; --housing:#0b0e0d;
+  --fiesta:#f08a73; --fiesta-soft:#3a221d; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#121614; --surface:#1b211e; --ink:#e7ece9; --muted:#9aa7a1; --line:#2c3531;
+  --accent:#7cc2ad; --accent-ink:#0f1a16; --accent-soft:#1f3a32;
+  --rojo:#f0594a; --amarillo:#f5bd34; --verde:#4cc06b; --off:#3a4440; --housing:#0b0e0d;
+  --fiesta:#f08a73; --fiesta-soft:#3a221d; color-scheme:dark;}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button{font:inherit;color:inherit}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 calc(96px + env(safe-area-inset-bottom,0px))}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 10px;display:flex;align-items:center;gap:8px}
+.daynav{flex:1;min-width:0;text-align:center}
+.daynav h1{font-family:var(--f-display);font-weight:800;font-size:1.45rem;margin:0;line-height:1.1;text-wrap:balance;text-transform:capitalize}
+.daynav .sub{font-size:.85rem;color:var(--muted);display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:4px}
+.iconbtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
+.iconbtn:disabled{opacity:.35;cursor:default}
+.iconbtn svg{width:20px;height:20px}
+.chip{display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.chip.fiesta{background:var(--fiesta-soft);color:var(--fiesta)}
+.hoylink{border:0;background:none;color:var(--accent);font-weight:700;cursor:pointer;padding:0;text-decoration:underline;font-size:.85rem}
+
+.view{display:flex;flex-direction:column;gap:14px}
+.sec-title{font-family:var(--f-display);font-weight:700;font-size:1.05rem;margin:10px 0 0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sec-title small{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:.85rem}
+
+/* Tramo del día */
+.tramo{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px}
+.tramo-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tramo-name{display:flex;flex-direction:column}
+.tramo-name b{font-family:var(--f-display);font-size:1.2rem;font-weight:700}
+.tramo-name span{font-size:.82rem;color:var(--muted)}
+.semaforo{display:flex;gap:8px;background:var(--housing);padding:7px 9px;border-radius:99px}
+.lamp{width:46px;height:46px;border-radius:50%;border:0;background:var(--off);cursor:pointer;position:relative;transition:transform .12s, box-shadow .2s, background .2s}
+.lamp:active{transform:scale(.92)}
+.lamp[aria-pressed="true"].r{background:var(--rojo);box-shadow:0 0 18px 2px var(--rojo)}
+.lamp[aria-pressed="true"].a{background:var(--amarillo);box-shadow:0 0 18px 2px var(--amarillo)}
+.lamp[aria-pressed="true"].v{background:var(--verde);box-shadow:0 0 18px 2px var(--verde)}
+.lamp span{position:absolute;inset:auto 0 -20px;font-size:.68rem;color:var(--muted);display:none}
+.estado{font-size:.85rem;color:var(--muted)}
+.estado b{color:var(--ink)}
+textarea{width:100%;min-height:64px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);padding:10px 12px;font:inherit;font-size:.95rem}
+
+/* Pastillas del día */
+.tomas{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.toma-group{padding:10px 14px;border-top:1px solid var(--line)}
+.toma-group:first-child{border-top:0}
+.toma-group h3{margin:0 0 6px;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.check{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;padding:8px 0;cursor:pointer}
+.box{width:28px;height:28px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;flex:none;transition:background .15s}
+.check[aria-pressed="true"] .box{background:var(--verde);border-color:var(--verde)}
+.box svg{width:18px;height:18px;stroke:#fff;opacity:0}
+.check[aria-pressed="true"] .box svg{opacity:1}
+.check .t{flex:1;min-width:0}
+.check .t b{display:block}
+.check .t span{font-size:.82rem;color:var(--muted)}
+.check[aria-pressed="true"] .t b{text-decoration:line-through;text-decoration-color:var(--muted)}
+.hora{font-size:.8rem;color:var(--verde);font-variant-numeric:tabular-nums;font-weight:700}
+.empty{padding:16px 14px;color:var(--muted);font-size:.92rem}
+.progress{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted)}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--off);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--verde);transition:width .3s}
+
+/* Calendario */
+.yearsw{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px;align-self:center}
+.yearsw button{border:0;background:none;padding:8px 18px;border-radius:99px;font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums}
+.yearsw button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.monthbar{display:flex;align-items:center;gap:8px}
+.monthbar h2{flex:1;text-align:center;margin:0;font-family:var(--f-display);font-weight:800;font-size:1.35rem;text-transform:capitalize}
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow div{text-align:center;font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.05em;padding-bottom:6px}
+.dow div:nth-child(7){color:var(--fiesta)}
+.day{aspect-ratio:1/1.12;max-width:100%;border:1px solid transparent;border-radius:10px;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:2px;font-variant-numeric:tabular-nums}
+.day .n{font-weight:700;font-size:.95rem}
+.day.fest{background:var(--fiesta-soft)}
+.day.fest .n,.day.dom .n{color:var(--fiesta)}
+.day.today{border-color:var(--accent);border-width:2px}
+.day.sel{background:var(--accent);}
+.day.sel .n{color:var(--accent-ink)}
+.dots{display:flex;gap:3px;height:7px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--off)}
+.dots i.r{background:var(--rojo)} .dots i.a{background:var(--amarillo)} .dots i.v{background:var(--verde)}
+.day .pill{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.festlist{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 14px}
+.festlist div{display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:.92rem}
+.festlist div:first-child{border-top:0}
+.festlist time{width:96px;flex:none;color:var(--fiesta);font-weight:700;font-variant-numeric:tabular-nums}
+.resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.resumen div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.resumen b{display:block;font-family:var(--f-display);font-size:1.5rem;font-variant-numeric:tabular-nums}
+.resumen span{font-size:.78rem;color:var(--muted)}
+.resumen .r b{color:var(--rojo)} .resumen .a b{color:var(--amarillo)} .resumen .v b{color:var(--verde)}
+
+/* Pastillas */
+.med{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;gap:12px;align-items:center}
+.med .t{flex:1;min-width:0}
+.med .t b{display:block;font-size:1.05rem;overflow-wrap:anywhere}
+.med .t span{font-size:.85rem;color:var(--muted)}
+.tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.form{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px}
+.form label{font-size:.85rem;font-weight:700;display:flex;flex-direction:column;gap:5px}
+.form input[type=text]{border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);padding:11px 12px;font:inherit}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:84px;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 6px;cursor:pointer;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.btn.danger{background:var(--rojo);color:#fff}
+.btn.block{width:100%}
+.note{font-size:.82rem;color:var(--muted)}
+.err{font-size:.85rem;color:var(--rojo)}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav.tabs button{border:0;background:none;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;position:relative}
+nav.tabs svg{width:24px;height:24px}
+nav.tabs button[aria-selected="true"]{color:var(--accent)}
+nav.tabs .badge{position:absolute;top:6px;left:calc(50% + 8px);min-width:18px;height:18px;border-radius:9px;background:var(--rojo);color:#fff;font-size:.7rem;display:grid;place-items:center;padding:0 5px}
+.aviso{background:var(--fiesta-soft);color:var(--ink);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:.92rem}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:99px;font-size:.85rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media (max-width:380px){.lamp{width:40px;height:40px}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top" id="top"></header>
+  <main id="main"></main>
+</div>
+<nav class="tabs" aria-label="Secciones"><div class="in" role="tablist">
+  <button role="tab" id="tab-hoy" data-tab="hoy" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="7" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="17" r="1.6" fill="currentColor"/></svg>Día</button>
+  <button role="tab" id="tab-cal" data-tab="cal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Calendario</button>
+  <button role="tab" id="tab-med" data-tab="med" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="8" width="19" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.7 8.7l4.6 6.6" transform=""/></svg>Pastillas<span class="badge" id="badge" hidden></span></button>
+  <button role="tab" id="tab-copia" data-tab="copia" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Copias<span class="badge" id="badge-copia" hidden>!</span></button>
+</div></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+// ---------- Calendario España ----------
+const MIN_Y=2026, MAX_Y=2027;
+// Festivos nacionales + Castilla y León (12 por año). Fuente: calendarios oficiales publicados.
+const FESTIVOS={
+ "2026-01-01":"Año Nuevo","2026-01-06":"Epifanía del Señor (Reyes)","2026-04-02":"Jueves Santo","2026-04-03":"Viernes Santo",
+ "2026-04-23":"Fiesta de Castilla y León (Villalar)","2026-05-01":"Fiesta del Trabajo","2026-08-15":"Asunción de la Virgen",
+ "2026-10-12":"Fiesta Nacional de España","2026-11-02":"Todos los Santos (traslado del domingo 1)","2026-12-07":"Día de la Constitución (traslado del domingo 6)",
+ "2026-12-08":"Inmaculada Concepción","2026-12-25":"Navidad",
+ "2027-01-01":"Año Nuevo","2027-01-06":"Epifanía del Señor (Reyes)","2027-03-25":"Jueves Santo","2027-03-26":"Viernes Santo",
+ "2027-04-23":"Fiesta de Castilla y León (Villalar)","2027-05-01":"Fiesta del Trabajo","2027-08-16":"Asunción de la Virgen (traslado del domingo 15)",
+ "2027-10-12":"Fiesta Nacional de España","2027-11-01":"Todos los Santos","2027-12-06":"Día de la Constitución",
+ "2027-12-08":"Inmaculada Concepción","2027-12-25":"Navidad"
+};
+const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+const TRAMOS=[{k:"m",name:"Mañana",hint:"Al levantarte y hasta comer"},{k:"t",name:"Tarde",hint:"Después de comer"},{k:"n",name:"Noche",hint:"Antes de dormir"}];
+const COL={r:"Mal",a:"Regular",v:"Bien"};
+const TOMAK={m:"Mañana",t:"Tarde",n:"Noche"};
+
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const fromIso=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
+const clampDate=d=>{const lo=new Date(MIN_Y,0,1),hi=new Date(MAX_Y,11,31);return d<lo?lo:d>hi?hi:d;};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nowHM=()=>{const d=new Date();return pad(d.getHours())+":"+pad(d.getMinutes());};
+
+// ---------- Estado ----------
+const S={tab:"hoy",date:iso(clampDate(new Date())),calY:null,calM:null,months:{},meds:[],editing:null,confirmDel:null,ready:false,persist:false,pendingImport:null};
+{const d=fromIso(S.date);S.calY=d.getFullYear();S.calM=d.getMonth();}
+
+// ---------- Almacenamiento en el dispositivo ----------
+const PFX="semaforo:";
+const LS={get(k){try{return JSON.parse(localStorage.getItem(PFX+k)||"null");}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(PFX+k,JSON.stringify(v));return true;}catch(e){toast("No se ha podido guardar: el móvil no tiene espacio o bloquea el guardado");return false;}}};
+const mk=s=>s.slice(0,7);
+function scheduleSave(key){ LS.set(key,key==="meds"?{list:S.meds}:S.months[key]); LS.set("cambio",Date.now()); }
+function month(key){ if(!S.months[key]) S.months[key]=LS.get(key)||{days:{}}; if(!S.months[key].days) S.months[key].days={}; return S.months[key]; }
+function day(isoStr){const m=month(mk(isoStr));const d=isoStr.slice(8);if(!m.days[d])m.days[d]={};return m.days[d];}
+function peekDay(isoStr){const m=S.months[mk(isoStr)]||LS.get(mk(isoStr));return m&&m.days&&m.days[isoStr.slice(8)]||null;}
+const standalone=()=>window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+async function boot(){
+  S.meds=(LS.get("meds")||{}).list||[];
+  try{ if(navigator.storage&&navigator.storage.persist){ S.persist=await navigator.storage.persisted()||await navigator.storage.persist(); } }catch(e){}
+  render();
+}
+
+// ---------- Copias de seguridad ----------
+function allData(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(PFX)&&!/^semaforo:(copia|cambio)$/.test(k))out[k.slice(PFX.length)]=LS.get(k.slice(PFX.length));}return out;}
+function hasData(){return Object.keys(allData()).length>0;}
+function backupBlob(){return new Blob([JSON.stringify({app:"semaforo-diario",version:1,fecha:new Date().toISOString(),datos:allData()},null,1)],{type:"application/json"});}
+function backupName(){return "semaforo-copia-"+iso(new Date())+".json";}
+async function doBackup(){
+  const blob=backupBlob(), name=backupName();
+  const file=new File([blob],name,{type:"application/json"});
+  try{ if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:"Copia de Mi Semáforo Diario"}); markBackup(); return; } }
+  catch(e){ if(e&&e.name==="AbortError") return; }
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); markBackup();
+}
+function markBackup(){LS.set("copia",Date.now());toast("Copia hecha");render();}
+function daysSinceBackup(){const c=LS.get("copia");return c?Math.floor((Date.now()-c)/864e5):null;}
+function needsBackup(){if(!hasData())return false;const c=LS.get("copia"),ch=LS.get("cambio")||0;if(!c)return true;return ch>c&&(Date.now()-c)>7*864e5;}
+async function importFile(file){
+  try{
+    const j=JSON.parse(await file.text());
+    if(!j||j.app!=="semaforo-diario"||typeof j.datos!=="object") throw new Error("formato");
+    S.pendingImport={datos:j.datos,fecha:j.fecha,n:Object.keys(j.datos).length};
+  }catch(e){ S.pendingImport={error:true}; }
+  render();
+}
+function applyImport(){
+  const d=S.pendingImport.datos;
+  Object.keys(allData()).forEach(k=>{try{localStorage.removeItem(PFX+k);}catch(e){}});
+  Object.keys(d).forEach(k=>LS.set(k,d[k]));
+  S.months={};S.meds=(LS.get("meds")||{}).list||[];S.pendingImport=null;LS.set("copia",Date.now());
+  toast("Datos recuperados");render();
+}
+
+// ---------- Pastillas helpers ----------
+function medsForDay(isoStr){return S.meds.filter(m=>(!m.desde||m.desde<=isoStr)&&(!m.hasta||m.hasta>=isoStr));}
+function dosesForDay(isoStr){const out=[];medsForDay(isoStr).forEach(m=>(m.tomas||[]).forEach(t=>out.push({med:m,t,key:m.id+"@"+t})));return out;}
+function pendingToday(){const t=iso(new Date());const d=peekDay(t);const taken=(d&&d.tomas)||{};return dosesForDay(t).filter(x=>!taken[x.key]).length;}
+
+// ---------- Render ----------
+const $=s=>document.querySelector(s);
+const ICON_L='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>';
+const ICON_R='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>';
+const TICK='<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+function render(){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===S.tab)));
+  const p=pendingToday(); const bd=$("#badge"); bd.hidden=!p; bd.textContent=p;
+  if(S.tab==="hoy") renderHoy(); else if(S.tab==="cal") renderCal(); else if(S.tab==="med") renderMeds(); else renderCopia();
+  const cb=$("#badge-copia"); cb.hidden=!needsBackup();
+}
+
+function renderHoy(){
+  const d=fromIso(S.date), today=iso(new Date());
+  const fest=FESTIVOS[S.date];
+  const first=S.date<=MIN_Y+"-01-01", last=S.date>=MAX_Y+"-12-31";
+  $("#top").innerHTML=`<button class="iconbtn" id="prev" aria-label="Día anterior" ${first?"disabled":""}>${ICON_L}</button>
+   <div class="daynav"><h1>${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}</h1>
+   <div class="sub"><span>${d.getFullYear()}</span>${S.date===today?'<span class="chip">Hoy</span>':`<button class="hoylink" id="gohoy">Ir a hoy</button>`}${fest?`<span class="chip fiesta">${esc(fest)}</span>`:""}</div></div>
+   <button class="iconbtn" id="next" aria-label="Día siguiente" ${last?"disabled":""}>${ICON_R}</button>`;
+  const dd=peekDay(S.date)||{};
+  let h='<section class="view">';
+  if(needsBackup()) h+=`<div class="aviso"><span>${LS.get("copia")?"Hace más de una semana que no haces copia.":"Aún no has hecho ninguna copia de tus datos."}</span><button class="btn" data-act="backup">Hacer copia</button></div>`;
+  TRAMOS.forEach(tr=>{
+    const v=(dd[tr.k]||{}).c||"", note=(dd[tr.k]||{}).n||"";
+    h+=`<article class="tramo"><div class="tramo-head"><div class="tramo-name"><b>${tr.name}</b><span>${tr.hint}</span></div>
+      <div class="semaforo" role="group" aria-label="¿Cómo te encuentras por la ${tr.name.toLowerCase()}?">
+      ${["r","a","v"].map(c=>`<button class="lamp ${c}" data-tr="${tr.k}" data-c="${c}" aria-pressed="${v===c}" aria-label="${COL[c]}" title="${COL[c]}"></button>`).join("")}</div></div>
+      <div class="estado">${v?`Te has sentido: <b>${COL[v]}</b>`:"Toca una luz: rojo mal, amarillo regular, verde bien"}</div>
+      <textarea id="nota-${tr.k}" data-tr="${tr.k}" placeholder="Notas de la ${tr.name.toLowerCase()} (síntomas, sueño, qué has hecho…)" aria-label="Notas de la ${tr.name.toLowerCase()}">${esc(note)}</textarea></article>`;
+  });
+  // pastillas del día
+  const doses=dosesForDay(S.date), taken=dd.tomas||{};
+  const done=doses.filter(x=>taken[x.key]).length;
+  h+=`<h2 class="sec-title">Pastillas de este día <small>${doses.length?done+" de "+doses.length+" tomadas":""}</small></h2>`;
+  if(doses.length){
+    h+=`<div class="progress"><div class="bar"><i style="width:${Math.round(done/doses.length*100)}%"></i></div></div><div class="tomas">`;
+    ["m","t","n"].forEach(t=>{const g=doses.filter(x=>x.t===t);if(!g.length)return;
+      h+=`<div class="toma-group"><h3>${TOMAK[t]}</h3>`+g.map(x=>`<button class="check" data-key="${esc(x.key)}" aria-pressed="${!!taken[x.key]}">
+        <span class="box">${TICK}</span><span class="t"><b>${esc(x.med.nombre)}</b><span>${esc(x.med.dosis||"")}</span></span>
+        ${taken[x.key]?`<span class="hora">${esc(taken[x.key])}</span>`:""}</button>`).join("")+`</div>`;});
+    h+=`</div>`;
+  } else h+=`<div class="tomas"><div class="empty">No tienes pastillas apuntadas para este día. Añádelas en la pestaña <b>Pastillas</b>.</div></div>`;
+  h+='</section>';
+  $("#main").innerHTML=h;
+}
+
+function renderCal(){
+  $("#top").innerHTML=`<div class="daynav"><h1>Calendario</h1><div class="sub"><span>Festivos de España y Castilla y León</span></div></div>`;
+  const y=S.calY,m=S.calM, today=iso(new Date());
+  const firstDow=(new Date(y,m,1).getDay()+6)%7, nDays=new Date(y,m+1,0).getDate();
+  let cells="";
+  for(let i=0;i<firstDow;i++) cells+="<div></div>";
+  const cnt={r:0,a:0,v:0};
+  for(let d=1;d<=nDays;d++){
+    const s=y+"-"+pad(m+1)+"-"+pad(d), dd=peekDay(s)||{}, dow=new Date(y,m,d).getDay();
+    const cls=["day",FESTIVOS[s]?"fest":"",dow===0?"dom":"",s===today?"today":"",s===S.date?"sel":""].join(" ");
+    const dots=["m","t","n"].map(k=>{const c=(dd[k]||{}).c||"";if(c)cnt[c]++;return `<i class="${c}"></i>`;}).join("");
+    const lbl=`${d} de ${MESES[m]}${FESTIVOS[s]?", "+FESTIVOS[s]:""}`;
+    cells+=`<button class="${cls}" data-date="${s}" aria-label="${esc(lbl)}" title="${esc(FESTIVOS[s]||"")}"><span class="n">${d}</span><span class="dots">${dots}</span></button>`;
+  }
+  const atStart=y===MIN_Y&&m===0, atEnd=y===MAX_Y&&m===11;
+  const fests=Object.keys(FESTIVOS).filter(k=>k.startsWith(y+"-"+pad(m+1)));
+  let h=`<section class="view">
+   <div class="yearsw" role="group" aria-label="Año">${[2026,2027].map(yy=>`<button data-year="${yy}" aria-pressed="${yy===y}">${yy}</button>`).join("")}</div>
+   <div class="monthbar"><button class="iconbtn" id="mprev" aria-label="Mes anterior" ${atStart?"disabled":""}>${ICON_L}</button><h2>${MESES[m]} ${y}</h2><button class="iconbtn" id="mnext" aria-label="Mes siguiente" ${atEnd?"disabled":""}>${ICON_R}</button></div>
+   <div class="cal"><div class="dow">${["L","M","X","J","V","S","D"].map(x=>`<div>${x}</div>`).join("")}</div><div class="grid">${cells}</div></div>
+   <div class="legend"><span><i style="background:var(--rojo)"></i>Mal</span><span><i style="background:var(--amarillo)"></i>Regular</span><span><i style="background:var(--verde)"></i>Bien</span><span><i style="background:var(--fiesta-soft);border:1px solid var(--fiesta)"></i>Festivo</span><span>Puntos: mañana · tarde · noche</span></div>
+   <h2 class="sec-title">Resumen de ${MESES[m]}</h2>
+   <div class="resumen"><div class="v"><b>${cnt.v}</b><span>tramos bien</span></div><div class="a"><b>${cnt.a}</b><span>regular</span></div><div class="r"><b>${cnt.r}</b><span>mal</span></div></div>`;
+  if(fests.length) h+=`<h2 class="sec-title">Festivos del mes</h2><div class="festlist">${fests.map(k=>{const dt=fromIso(k);return `<div><time datetime="${k}">${DIAS[dt.getDay()].slice(0,3)} ${dt.getDate()}</time><span>${esc(FESTIVOS[k])}</span></div>`;}).join("")}</div>`;
+  h+=`<p class="note">Los dos festivos locales de tu municipio no están incluidos.</p></section>`;
+  $("#main").innerHTML=h;
+}
+
+function renderMeds(){
+  $("#top").innerHTML=`<div class="daynav"><h1>Mis pastillas</h1><div class="sub"><span>Qué tomas y en qué momento del día</span></div></div>`;
+  const hoy=iso(new Date());
+  const activos=S.meds.filter(m=>!m.hasta||m.hasta>=hoy);
+  let h='<section class="view">';
+  const p=pendingToday();
+  if(dosesForDay(hoy).length) h+=`<button class="btn block ${p?"":"ghost"}" id="ver-hoy">${p?`Te quedan ${p} toma${p>1?"s":""} de hoy · Marcar`:"Hoy ya has tomado todo"}</button>`;
+  if(!activos.length && !S.editing) h+=`<div class="tomas"><div class="empty">Aún no has apuntado ninguna pastilla. Pulsa <b>Añadir pastilla</b>, escribe el nombre y elige si la tomas por la mañana, la tarde o la noche.</div></div>`;
+  activos.forEach(m=>{
+    if(S.editing&&S.editing.id===m.id){h+=formHtml();return;}
+    if(S.confirmDel===m.id){
+      h+=`<div class="form"><b>¿Quitar ${esc(m.nombre)} de tu lista?</b><span class="note">Lo que ya marcaste en días anteriores se conserva.</span><div class="row"><button class="btn danger" data-act="del-ok" data-id="${m.id}">Quitar</button><button class="btn ghost" data-act="del-no">Cancelar</button></div></div>`;return;}
+    h+=`<div class="med"><div class="t"><b>${esc(m.nombre)}</b><span>${esc(m.dosis||"Sin dosis indicada")}</span>
+      <div class="tags">${(m.tomas||[]).map(t=>`<span class="chip">${TOMAK[t]}</span>`).join("")}</div></div>
+      <button class="btn ghost" data-act="edit" data-id="${m.id}">Editar</button></div>`;
+  });
+  if(S.editing&&!S.editing.id) h+=formHtml();
+  else if(!S.editing) h+=`<button class="btn block" data-act="new">Añadir pastilla</button>`;
+  h+=`<p class="note">Tus datos se guardan solo en este móvil. Haz copias en la pestaña <b>Copias</b>.</p></section>`;
+  $("#main").innerHTML=h;
+  const f=$("#f-nombre"); if(f&&!f.value) f.focus();
+}
+
+function renderCopia(){
+  $("#top").innerHTML=`<div class="daynav"><h1>Copias</h1><div class="sub"><span>Para no perder nunca lo que apuntas</span></div></div>`;
+  const ds=daysSinceBackup();
+  let h='<section class="view">';
+  h+=`<div class="form"><b style="font-family:var(--f-display);font-size:1.15rem">Hacer copia de seguridad</b>
+   <span class="note" style="font-size:.92rem">Guarda un archivo con todo tu diario y tus pastillas. Envíatelo por WhatsApp o correo, o guárdalo en Google Drive o iCloud. Con ese archivo lo recuperas todo en este u otro móvil.</span>
+   <div class="estado">Última copia: <b>${ds===null?"nunca":ds===0?"hoy":ds===1?"ayer":"hace "+ds+" días"}</b></div>
+   <button class="btn block" data-act="backup">Hacer copia ahora</button></div>`;
+  h+=`<div class="form"><b style="font-family:var(--f-display);font-size:1.15rem">Recuperar una copia</b>
+   <span class="note" style="font-size:.92rem">Elige el archivo <i>semaforo-copia-….json</i>. Sustituye lo que hay ahora en este móvil.</span>`;
+  const pi=S.pendingImport;
+  if(pi&&pi.error) h+=`<div class="err">Ese archivo no es una copia de esta app. Elige un archivo que empiece por «semaforo-copia».</div>`;
+  if(pi&&!pi.error){const f=pi.fecha?new Date(pi.fecha):null;
+    h+=`<div class="aviso"><span>Copia del ${f?f.getDate()+" de "+MESES[f.getMonth()]+" de "+f.getFullYear():"(sin fecha)"}. ¿Sustituir los datos de este móvil por los de la copia?</span>
+    <div class="row"><button class="btn danger" data-act="import-ok">Sustituir</button><button class="btn ghost" data-act="import-no">Cancelar</button></div></div>`;}
+  else h+=`<label class="btn ghost block" style="text-align:center;cursor:pointer">Elegir archivo de copia<input type="file" id="f-import" accept=".json,application/json" hidden></label>`;
+  h+=`</div>`;
+  h+=`<div class="form"><b style="font-family:var(--f-display);font-size:1.15rem">Instálala en el móvil</b>
+   <span class="note" style="font-size:.92rem">${standalone()?"Ya la tienes instalada. Así el móvil no borra los datos por falta de uso.":
+   "Instálala para que el móvil no borre los datos si pasas unos días sin abrirla:<br>• <b>iPhone (Safari)</b>: botón Compartir → «Añadir a pantalla de inicio».<br>• <b>Android (Chrome)</b>: menú ⋮ → «Instalar aplicación» o «Añadir a pantalla de inicio»."}</span>
+   <div class="estado">Guardado protegido: <b>${S.persist?"activado":"lo decide el navegador"}</b></div></div>`;
+  h+=`<p class="note">Tus datos no salen de tu móvil salvo cuando tú haces una copia. Nadie más los ve.</p></section>`;
+  $("#main").innerHTML=h;
+}
+function formHtml(){
+  const e=S.editing;
+  return `<form class="form" id="medform" novalidate>
+   <label>Nombre<input type="text" id="f-nombre" value="${esc(e.nombre)}" placeholder="Ej.: Omeprazol 20 mg" autocomplete="off"></label>
+   <label>Dosis o indicación<input type="text" id="f-dosis" value="${esc(e.dosis)}" placeholder="Ej.: 1 cápsula en ayunas" autocomplete="off"></label>
+   <div><div style="font-size:.85rem;font-weight:700;margin-bottom:5px">¿Cuándo la tomas?</div>
+   <div class="seg">${["m","t","n"].map(t=>`<button type="button" data-toma="${t}" aria-pressed="${e.tomas.includes(t)}">${TOMAK[t]}</button>`).join("")}</div></div>
+   <div class="err" id="f-err" hidden></div>
+   <div class="row"><button class="btn" type="submit">Guardar</button><button class="btn ghost" type="button" data-act="cancel">Cancelar</button>
+   ${e.id?`<button class="btn ghost" type="button" data-act="del" data-id="${e.id}" style="margin-left:auto;color:var(--rojo)">Quitar</button>`:""}</div></form>`;
+}
+
+// ---------- Eventos ----------
+let toastT;function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("on"),1800);}
+function shift(n){const d=fromIso(S.date);d.setDate(d.getDate()+n);S.date=iso(clampDate(d));const c=fromIso(S.date);S.calY=c.getFullYear();S.calM=c.getMonth();render();window.scrollTo({top:0});}
+
+document.addEventListener("click",ev=>{
+  const t=ev.target.closest("button"); if(!t) return;
+  if(t.dataset.tab){S.tab=t.dataset.tab;S.editing=null;S.confirmDel=null;S.pendingImport=null;render();window.scrollTo({top:0});return;}
+  if(t.id==="prev") return shift(-1);
+  if(t.id==="next") return shift(1);
+  if(t.id==="gohoy"){S.date=iso(clampDate(new Date()));render();return;}
+  if(t.classList.contains("lamp")){
+    const dd=day(S.date), k=t.dataset.tr; dd[k]=dd[k]||{};
+    dd[k].c = dd[k].c===t.dataset.c ? "" : t.dataset.c;
+    scheduleSave(mk(S.date)); render();
+    if(dd[k].c) toast(TRAMOS.find(x=>x.k===k).name+": "+COL[dd[k].c]);
+    return;
+  }
+  if(t.classList.contains("check")){
+    const dd=day(S.date); dd.tomas=dd.tomas||{};
+    if(dd.tomas[t.dataset.key]) delete dd.tomas[t.dataset.key]; else { dd.tomas[t.dataset.key]= S.date===iso(new Date())?nowHM():"✓"; }
+    scheduleSave(mk(S.date)); render(); return;
+  }
+  if(t.dataset.year){const y=+t.dataset.year;S.calY=y;render();return;}
+  if(t.id==="mprev"){if(S.calM===0){S.calM=11;S.calY--;}else S.calM--;render();return;}
+  if(t.id==="mnext"){if(S.calM===11){S.calM=0;S.calY++;}else S.calM++;render();return;}
+  if(t.dataset.date){S.date=t.dataset.date;S.tab="hoy";render();window.scrollTo({top:0});return;}
+  if(t.id==="ver-hoy"){S.date=iso(clampDate(new Date()));S.tab="hoy";render();setTimeout(()=>{const x=document.querySelector(".tomas");x&&x.scrollIntoView({behavior:"smooth",block:"center"});},50);return;}
+  const act=t.dataset.act;
+  if(act==="backup"){doBackup();return;}
+  if(act==="import-ok"){applyImport();return;}
+  if(act==="import-no"){S.pendingImport=null;render();return;}
+  if(act==="new"){S.editing={id:null,nombre:"",dosis:"",tomas:["m"]};S.confirmDel=null;render();return;}
+  if(act==="edit"){const m=S.meds.find(x=>x.id===t.dataset.id);S.editing={id:m.id,nombre:m.nombre,dosis:m.dosis||"",tomas:[...(m.tomas||[])]};S.confirmDel=null;render();return;}
+  if(act==="cancel"){S.editing=null;render();return;}
+  if(act==="del"){S.confirmDel=t.dataset.id;S.editing=null;render();return;}
+  if(act==="del-no"){S.confirmDel=null;render();return;}
+  if(act==="del-ok"){const m=S.meds.find(x=>x.id===t.dataset.id);const y=new Date();y.setDate(y.getDate()-1);
+    if(m){ if(m.desde&&m.desde>iso(y)) S.meds=S.meds.filter(x=>x!==m); else m.hasta=iso(y);}
+    S.confirmDel=null;scheduleSave("meds");render();toast("Pastilla quitada");return;}
+  if(t.dataset.toma){const e=S.editing;syncForm();const k=t.dataset.toma;e.tomas=e.tomas.includes(k)?e.tomas.filter(x=>x!==k):[...e.tomas,k].sort((a,b)=>"mtn".indexOf(a)-"mtn".indexOf(b));render();return;}
+});
+function syncForm(){const n=$("#f-nombre"),d=$("#f-dosis");if(n)S.editing.nombre=n.value;if(d)S.editing.dosis=d.value;}
+document.addEventListener("submit",ev=>{
+  if(ev.target.id!=="medform") return; ev.preventDefault(); syncForm();
+  const e=S.editing, err=$("#f-err");
+  if(!e.nombre.trim()){err.textContent="Escribe el nombre de la pastilla.";err.hidden=false;return;}
+  if(!e.tomas.length){err.textContent="Elige al menos un momento: mañana, tarde o noche.";err.hidden=false;return;}
+  if(e.id){const m=S.meds.find(x=>x.id===e.id);m.nombre=e.nombre.trim();m.dosis=e.dosis.trim();m.tomas=e.tomas;}
+  else S.meds.push({id:"p"+Date.now().toString(36),nombre:e.nombre.trim(),dosis:e.dosis.trim(),tomas:e.tomas,desde:iso(new Date())});
+  S.editing=null;scheduleSave("meds");render();toast("Guardado");
+});
+document.addEventListener("change",ev=>{if(ev.target.id==="f-import"&&ev.target.files[0])importFile(ev.target.files[0]);});
+let noteT;
+document.addEventListener("input",ev=>{
+  const ta=ev.target; if(ta.tagName!=="TEXTAREA"||!ta.dataset.tr) return;
+  const dd=day(S.date), k=ta.dataset.tr; dd[k]=dd[k]||{}; dd[k].n=ta.value;
+  scheduleSave(mk(S.date));
+});
+document.addEventListener("keydown",ev=>{
+  if(S.tab!=="hoy"||/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  if(ev.key==="ArrowLeft") shift(-1); if(ev.key==="ArrowRight") shift(1);
+});
+// Cambio de día a medianoche / al volver a la app
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.ready)render();});
+S.ready=true;
+boot();
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+
+</body>
+</html>
